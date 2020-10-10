@@ -1,0 +1,188 @@
+# This is the SAM template that represents the architecture of your serverless application
+# https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-template-basics.html
+
+AWSTemplateFormatVersion: 2010-09-09
+Description: >-
+  boilerPlateApp
+Transform:
+- AWS::Serverless-2016-10-31
+Globals:
+  Function:
+    Timeout: 5
+    Runtime: nodejs12.x
+    Environment:
+      Variables:
+        AWS: true
+Resources:
+  dependencies:
+      Type: AWS::Serverless::LayerVersion
+      Properties:
+          LayerName: dependencies
+          Description: mutual helper classes
+          ContentUri: dependencies/nodejs.zip
+          CompatibleRuntimes:
+            - nodejs12.x
+          RetentionPolicy: Retain
+  auth:
+    Type: AWS::Serverless::Function
+    Properties:
+      Layers:
+      - !Ref dependencies
+      Handler: src/handlers/authentication/index.Auth
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 5
+      Description: Checks JWT token and returns its validity
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the table
+        - DynamoDBCrudPolicy:
+            TableName: !Ref boilerPlateUsers
+      Environment:
+        Variables:
+          # Make table name accessible as environment variable from function code during execution
+          TABLE: !Ref boilerPlateUsers
+          PRIVKEY: !Ref PrivKey
+          JWTALGORITHM: !Ref JwtAlgorithm
+          EXPIREMINS: !Ref ExpireMins
+          MSTEAMSWEBHOOK: !Ref MsTeamsWebhookForAlerts
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /
+            Method: GET  
+
+  signup:
+    Type: AWS::Serverless::Function
+    Properties:
+      Layers:
+      - !Ref dependencies
+      Handler: src/handlers/authentication/index.SignUp
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 5
+      Role: arn:aws:iam::209163669254:role/integrationApplications
+      Description: Creates a new row on database
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the table
+        - DynamoDBCrudPolicy:
+            TableName: !Ref boilerPlateUsers
+      Environment:
+        Variables:
+          TABLE: !Ref boilerPlateUsers
+          JWTALGORITHM: !Ref JwtAlgorithm
+          PRIVKEY: !Ref PrivKey
+          BASEURL: !Ref BaseUrl
+          MSTEAMSWEBHOOK: !Ref MsTeamsWebhookForAlerts
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /
+            Method: PUT
+
+  signin:
+    Type: AWS::Serverless::Function
+    Properties:
+      Layers:
+      - !Ref dependencies
+      Handler: src/handlers/authentication/index.SignIn
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 5
+      Description: SignIn function
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the table
+        - DynamoDBCrudPolicy:
+            TableName: !Ref boilerPlateUsers
+      Environment:
+        Variables:
+          TABLE: !Ref boilerPlateUsers
+          PRIVKEY: !Ref PrivKey
+          JWTALGORITHM: !Ref JwtAlgorithm
+          EXPIREMINS: !Ref ExpireMins
+          MSTEAMSWEBHOOK: !Ref MsTeamsWebhookForAlerts
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /
+            Method: POST
+
+  verifyaccount:
+    Type: AWS::Serverless::Function
+    Properties:
+      Layers:
+      - !Ref dependencies
+      Handler: src/handlers/authentication/index.VerifyAccount
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 5
+      Description: Checks JWT token, verifies account and returns its validity
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the table
+        - DynamoDBCrudPolicy:
+            TableName: !Ref boilerPlateUsers
+      Environment:
+        Variables:
+          # Make table name accessible as environment variable from function code during execution
+          TABLE: !Ref boilerPlateUsers
+          PRIVKEY: !Ref PrivKey
+          JWTALGORITHM: !Ref JwtAlgorithm
+          EXPIREMINS: !Ref ExpireMins
+          MSTEAMSWEBHOOK: !Ref MsTeamsWebhookForAlerts
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /verifyAccount/{token}
+            Method: GET
+
+  # DynamoDBs
+  boilerPlateUsers:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: boilerPlateUsers
+      AttributeDefinitions:
+        - AttributeName: email
+          AttributeType: S 
+        - AttributeName: companyId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: email
+          KeyType: HASH
+        - AttributeName: companyId
+          KeyType: RANGE
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+Outputs:
+  WebEndpoint:
+    Description: "API Gateway endpoint URL for boilerPlateApp"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/boilerPlateApp/"
+
+Parameters:
+  PrivKey:
+      Description: 'Private key for JWT'
+      Type: 'String'
+      Default: 'themostsecretthingintheworld'
+  JwtAlgorithm:
+      Description: 'JWT encryption hash algorithm'
+      Type: 'String'
+      Default: 'HS256'
+  ExpireMins:
+      Description: 'Expire value in minutes for token expiration'
+      Type: 'String'
+      Default: 60
+  BaseUrl:
+      Description: 'Base url of the application'
+      Type: 'String'
+      Default: 'PLACE HERE BASE URL'
+  MsTeamsWebhookForAlerts:
+      Description: 'Incoming Webhook connector webhook url to receive error logs on microsoft teams'
+      Type: 'String'
+      Default: 'PLACE MSTEAMS WEBHOOK CONNECTOR URL HERE'
+  JiraProjectUrl:
+    Description: 'Jira project url to open up a ticket'
+    Type: 'String'
+    Default: 'PLACE JIRA LINK TO CREATE A NEW BUG REPORT HERE'
