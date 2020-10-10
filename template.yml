@@ -36,11 +36,11 @@ Resources:
       Policies:
         # Give Create/Read/Update/Delete Permissions to the table
         - DynamoDBCrudPolicy:
-            TableName: !Ref boilerPlateUsers
+            TableName: !Ref boilerplate-users
       Environment:
         Variables:
           # Make table name accessible as environment variable from function code during execution
-          TABLE: !Ref boilerPlateUsers
+          TABLE: !Ref userstable
           PRIVKEY: !Ref PrivKey
           JWTALGORITHM: !Ref JwtAlgorithm
           EXPIREMINS: !Ref ExpireMins
@@ -66,10 +66,10 @@ Resources:
       Policies:
         # Give Create/Read/Update/Delete Permissions to the table
         - DynamoDBCrudPolicy:
-            TableName: !Ref boilerPlateUsers
+            TableName: !Ref boilerplate-users
       Environment:
         Variables:
-          TABLE: !Ref boilerPlateUsers
+          TABLE: !Ref userstable
           JWTALGORITHM: !Ref JwtAlgorithm
           PRIVKEY: !Ref PrivKey
           BASEURL: !Ref BaseUrl
@@ -94,10 +94,10 @@ Resources:
       Policies:
         # Give Create/Read/Update/Delete Permissions to the table
         - DynamoDBCrudPolicy:
-            TableName: !Ref boilerPlateUsers
+            TableName: !Ref boilerplate-users
       Environment:
         Variables:
-          TABLE: !Ref boilerPlateUsers
+          TABLE: !Ref userstable
           PRIVKEY: !Ref PrivKey
           JWTALGORITHM: !Ref JwtAlgorithm
           EXPIREMINS: !Ref ExpireMins
@@ -122,11 +122,11 @@ Resources:
       Policies:
         # Give Create/Read/Update/Delete Permissions to the table
         - DynamoDBCrudPolicy:
-            TableName: !Ref boilerPlateUsers
+            TableName: !Ref boilerplate-users
       Environment:
         Variables:
           # Make table name accessible as environment variable from function code during execution
-          TABLE: !Ref boilerPlateUsers
+          TABLE: !Ref userstable
           PRIVKEY: !Ref PrivKey
           JWTALGORITHM: !Ref JwtAlgorithm
           EXPIREMINS: !Ref ExpireMins
@@ -139,10 +139,10 @@ Resources:
             Method: GET
 
   # DynamoDBs
-  boilerPlateUsers:
+  userstable:
     Type: AWS::DynamoDB::Table
     Properties:
-      TableName: boilerPlateUsers
+      TableName: boilerplate-users
       AttributeDefinitions:
         - AttributeName: email
           AttributeType: S 
